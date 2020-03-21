@@ -1,0 +1,1 @@
+export interface LatLngCustom  { lng : number , lat : number };
