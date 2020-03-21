@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { LatLngCustom } from './LatLng';
+import * as linSystem from "linear-equation-system"
 
 @Injectable({
   providedIn: 'root'
@@ -10,11 +11,12 @@ export class OffsetService {
 
   generateOffset(array: any[], offset) {
 
-      
+
     //array = this.latLngToPoint(array)
 
     let sameSlope = [];
     let offsetedArray = [];
+    let previousCalculated = [[0, 0], [0, 0]];
     let prevSlope = this.newSlope(array[1], array[0]);
 
     for (let i = 0; i < array.length - 1; i++) {
@@ -22,13 +24,15 @@ export class OffsetService {
         sameSlope.push(array[i]);
       }
       else {
-        console.log(array[i])
         sameSlope.push(array[i]);
-      
+        if (i == array.length - 2)
+          sameSlope.push(array[i + 1])
         if (sameSlope.length > 1) {
-          this.calculateOffsetArray(sameSlope, offset);
-          console.log('sameslope',sameSlope)
-          offsetedArray.push(... this.calculateOffsetArray(sameSlope,offset))
+          let actual = this.calculateOffsetArray(sameSlope, offset);
+          console.log('sameslope', sameSlope)
+          offsetedArray.push(... this.calculateOffsetArray(sameSlope, offset))
+          this.concatArrays(previousCalculated, actual)
+          previousCalculated = this.calculateOffsetArray(sameSlope, offset);
         }
         sameSlope = [];
         sameSlope.push(array[i])
@@ -36,7 +40,7 @@ export class OffsetService {
       }
     }
     console.log('offsetedArray', offsetedArray);
-    
+
     return offsetedArray;
   }
 
@@ -82,7 +86,7 @@ export class OffsetService {
         break;
       }
     }
-    
+
     return [x, y]
   }
 
@@ -114,5 +118,25 @@ export class OffsetService {
         else
           return 3; //negative, positive
   }
+
+  concatArrays(prev: any[], next: any[]) {
+    let prevSlope: number = (-1) * this.newSlope(prev[1], prev[0]);
+    if(prevSlope==(-0))
+    prevSlope=0;
+    let nextSlope: number = (-1) * this.newSlope(next[1], next[0]);
+    if(nextSlope==(-0))
+    prevSlope=0;
+    let A: any[] = [[1, prevSlope], [1, nextSlope]]
+
+    let B = [(-1) * this.newSlope(prev[1], prev[0]) * prev[0][0] + prev[0][1],
+    (-1) * this.newSlope(next[1], next[0]) * next[0][0] + next[0][1]];
+
+    console.log('A',A)
+
+    console.log(linSystem.solve(A, B));
+
+
+  }
+
 
 }
