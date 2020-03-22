@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { LatLngCustom } from './LatLng';
 import * as linSystem from "linear-equation-system"
+import * as linearSolve from 'linear-solve'
 
 @Injectable({
   providedIn: 'root'
@@ -9,6 +10,10 @@ export class OffsetService {
 
   constructor() { }
 
+  finalArray = []
+  intersected: boolean = false;
+  temp = []
+
   generateOffset(array: any[], offset) {
 
 
@@ -16,7 +21,7 @@ export class OffsetService {
 
     let sameSlope = [];
     let offsetedArray = [];
-    let previousCalculated = [[0, 0], [0, 0]];
+    let previousCalculated = [[10, 0], [20, 20]];
     let prevSlope = this.newSlope(array[1], array[0]);
 
     for (let i = 0; i < array.length - 1; i++) {
@@ -29,9 +34,10 @@ export class OffsetService {
           sameSlope.push(array[i + 1])
         if (sameSlope.length > 1) {
           let actual = this.calculateOffsetArray(sameSlope, offset);
-          console.log('sameslope', sameSlope)
-          offsetedArray.push(... this.calculateOffsetArray(sameSlope, offset))
+          //offsetedArray.push(... this.calculateOffsetArray(sameSlope, offset))
+          
           this.concatArrays(previousCalculated, actual)
+
           previousCalculated = this.calculateOffsetArray(sameSlope, offset);
         }
         sameSlope = [];
@@ -39,9 +45,13 @@ export class OffsetService {
         prevSlope = this.newSlope(array[i + 1], array[i]);
       }
     }
-    console.log('offsetedArray', offsetedArray);
-
-    return offsetedArray;
+    //return offsetedArray;
+    let final = [];
+    this.finalArray.forEach(x => {
+      final.push(...x)
+    })
+    final = final.slice(2,final.length)
+    return final;
   }
 
   private newSlope(p2: any[], p1: any[]) {
@@ -120,23 +130,63 @@ export class OffsetService {
   }
 
   concatArrays(prev: any[], next: any[]) {
-    let prevSlope: number = (-1) * this.newSlope(prev[1], prev[0]);
-    if(prevSlope==(-0))
-    prevSlope=0;
-    let nextSlope: number = (-1) * this.newSlope(next[1], next[0]);
-    if(nextSlope==(-0))
-    prevSlope=0;
-    let A: any[] = [[1, prevSlope], [1, nextSlope]]
 
-    let B = [(-1) * this.newSlope(prev[1], prev[0]) * prev[0][0] + prev[0][1],
-    (-1) * this.newSlope(next[1], next[0]) * next[0][0] + next[0][1]];
+    if (this.linesIntersect(prev, next)) {  //NQS VIJAT PRITEN
+      let concated = this.partialConcatArrays(prev, next, this.findMutualPoint(prev, next));
+      if (this.intersected) {  //NQS KA NJE BASHKIM ME PERPARA
+        this.finalArray.pop()
+        this.finalArray.push([this.temp[1],concated[0][concated.length-1]], concated[1])
+      }else{this.finalArray.push(concated[0], concated[1])}
 
-    console.log('A',A)
+      this.intersected=true;
+      this.temp = concated[1];
 
-    console.log(linSystem.solve(A, B));
+    } else{  //BASHKIM I THJESHTE
+      if(this.intersected){
+        this.finalArray.pop()
+        this.finalArray.push([this.temp[0],prev[prev.length-1]],next)
+      }
+      this.finalArray.push(prev)
+      this.intersected=false;
+      this.temp=[]
+    }
+  }
 
+  findMutualPoint(prev: any[], next: any[]) {
+    let A: number[][] = [[(-1) * this.newSlope(prev[1], prev[0]), 1], [(-1) * this.newSlope(next[1], next[0]), 1]]
+
+    let b0 = ((-1) * this.newSlope(prev[1], prev[0])) * prev[0][0] + prev[0][1];
+    let b1 = ((-1) * this.newSlope(next[1], next[0])) * next[0][0] + next[0][1];
+    let B = [b0, b1];
+    try {
+      return linearSolve.solve(A, B);
+    } catch{
+      console.log('////////ERROR///////')
+    }
 
   }
 
+  partialConcatArrays(prev: any[], next: any[], mutualPoint) {
+    return [[prev[0], mutualPoint], [mutualPoint, next[1]]]
+  }
+
+  intersects(a, b, c, d, p, q, r, s) {
+    var det, gamma, lambda;
+    det = (c - a) * (s - q) - (r - p) * (d - b);
+    if (det === 0) {
+      return false;
+    } else {
+      lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
+      gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+      return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+    }
+  }
+
+  linesIntersect(prev: any[], next: any[]) {
+    return this.intersects(prev[0][0], prev[0][1], prev[1][0], prev[1][1],
+      next[0][0], next[0][1], next[1][0], next[1][1]);
+  }
 
 }
+
+

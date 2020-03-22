@@ -53,7 +53,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     var polyline = L.polyline(polylinePoints).addTo(this.map);
 
     
-    var polyline = L.polyline(this.offsetService.generateOffset(polylinePoints,10)
+    var polyline = L.polyline(this.offsetService.generateOffset(polylinePoints,50)
     ,{color: "red"}).addTo(this.map);
   }
 }

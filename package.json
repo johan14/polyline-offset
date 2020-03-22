@@ -21,6 +21,7 @@
     "@angular/router": "~8.2.14",
     "leaflet": "^1.6.0",
     "linear-equation-system": "^1.1.1",
+    "linear-solve": "^1.2.1",
     "rxjs": "~6.4.0",
     "tslib": "^1.10.0",
     "zone.js": "~0.9.1"
